@@ -2,6 +2,7 @@ package com.lin.security;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Properties;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -23,11 +24,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import com.google.code.kaptcha.Producer;
+import com.google.code.kaptcha.impl.DefaultKaptcha;
+import com.google.code.kaptcha.util.Config;
 
 import net.sf.json.JSONObject;
 
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+
 
 	@Autowired
 	private DataSource dataSource;
@@ -73,6 +80,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 				JSONObject json = new JSONObject();
 				json.put("code", "error");
 				out.write(json.toString());
+				exception.printStackTrace();
 			}
 		});
 		filter.setFilterProcessesUrl("/login");
@@ -89,12 +97,28 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	protected void configure(HttpSecurity http) throws Exception {
 		http.authorizeRequests().antMatchers("/admin/api/**").hasRole("ADMIN").antMatchers("/user/api/**")
 				.hasRole("USER").antMatchers("/app/api/**").permitAll().anyRequest().authenticated().and().formLogin()
-				.loginPage("/").and().csrf().disable().addFilter(customAuthenticationFilter());
+				.loginPage("/").and().csrf().disable()
+				.addFilterBefore(new VerificationCodeFilter(), UsernamePasswordAuthenticationFilter.class)
+				.addFilter(customAuthenticationFilter()).sessionManagement()
+				.maximumSessions(1);
 	}
 
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 		auth.jdbcAuthentication().dataSource(dataSource).passwordEncoder(encoder());
+	}
+
+	@Bean
+	public Producer captcha() {
+		Properties properties = new Properties();
+		properties.setProperty("kaptcha.image.width", "150");
+		properties.setProperty("kaptcha.image.height", "50");
+		properties.setProperty("kaptcha.textproducer.char.string", "0123456789");
+		properties.setProperty("kaptcha.textproducer.char.length", "4");
+		Config config = new Config(properties);
+		DefaultKaptcha defaultKaptcha = new DefaultKaptcha();
+		defaultKaptcha.setConfig(config);
+		return defaultKaptcha;
 	}
 
 }

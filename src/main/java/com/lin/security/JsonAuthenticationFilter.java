@@ -6,6 +6,8 @@ import java.io.InputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -16,6 +18,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class JsonAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
+	private Logger log = LoggerFactory.getLogger(this.getClass());
+
 	@SuppressWarnings("finally")
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
@@ -23,17 +27,17 @@ public class JsonAuthenticationFilter extends UsernamePasswordAuthenticationFilt
 		if (request.getContentType().equals(MediaType.APPLICATION_JSON_UTF8_VALUE)
 				|| request.getContentType().equals(MediaType.APPLICATION_JSON_VALUE)) {
 			ObjectMapper mapper = new ObjectMapper();
-			UsernamePasswordAuthenticationToken authRequest = null;
+			UsernamePasswordAuthenticationToken token = null;
 			try (InputStream is = request.getInputStream()) {
-				AuthenticationBean authenticationBean = mapper.readValue(is, AuthenticationBean.class);
-				authRequest = new UsernamePasswordAuthenticationToken(authenticationBean.getUsername(),
-						authenticationBean.getPassword());
+				User user = mapper.readValue(is, User.class);
+				token = new UsernamePasswordAuthenticationToken(user.getUsername(),
+						user.getPassword());
 			} catch (IOException e) {
-				e.printStackTrace();
-				authRequest = new UsernamePasswordAuthenticationToken("", "");
+				log.error("authenticated error:{}", e);
+				token = new UsernamePasswordAuthenticationToken("", "");
 			} finally {
-				setDetails(request, authRequest);
-				return this.getAuthenticationManager().authenticate(authRequest);
+				setDetails(request, token);
+				return this.getAuthenticationManager().authenticate(token);
 			}
 		} else {
 			return super.attemptAuthentication(request, response);
