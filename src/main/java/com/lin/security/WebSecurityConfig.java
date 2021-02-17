@@ -11,6 +11,7 @@ import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -33,8 +34,8 @@ import com.google.code.kaptcha.util.Config;
 import net.sf.json.JSONObject;
 
 @EnableWebSecurity
+@Configuration
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
-
 
 	@Autowired
 	private DataSource dataSource;
@@ -99,8 +100,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 				.hasRole("USER").antMatchers("/app/api/**").permitAll().anyRequest().authenticated().and().formLogin()
 				.loginPage("/").and().csrf().disable()
 				.addFilterBefore(new VerificationCodeFilter(), UsernamePasswordAuthenticationFilter.class)
-				.addFilter(customAuthenticationFilter()).sessionManagement()
-				.maximumSessions(1);
+				.addFilter(customAuthenticationFilter()).sessionManagement().maximumSessions(1);
 	}
 
 	@Override

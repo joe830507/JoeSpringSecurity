@@ -1,4 +1,4 @@
-package com.lin.config;
+package com.lin.starter;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
